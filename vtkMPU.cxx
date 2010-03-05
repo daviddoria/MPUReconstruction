@@ -22,9 +22,22 @@ vtkStandardNewMacro(vtkMPU);
 
 vtkMPU::vtkMPU()
 {
-  
-  
+  // parameter setting
+  Support = 0.75;
+  Box = 1.2;
+  Lambda = 0.1;
+  Nmin = 15;
+  Edge = 0.9;
+  Corner = 0.7;
+  Grid = 0.01;
+  Level = 20;
+  Error = 0.005;
+  Iso = 0;
+  Sharp=true;
 }
+
+vtkMPU::~vtkMPU()
+{}
 
 int vtkMPU::RequestData(vtkInformation *vtkNotUsed(request),
                                              vtkInformationVector **inputVector,
@@ -43,18 +56,7 @@ int vtkMPU::RequestData(vtkInformation *vtkNotUsed(request),
       outInfo->Get(vtkDataObject::DATA_OBJECT()));
     
   
-  // parameter setting
-  float m_support = 0.75;
-  float m_box = 1.2;
-  float m_lambda = 0.1;
-  float m_nmin = 15;
-  float m_edge = 0.9;
-  float m_corner = 0.7;
-  bool m_sharp=true;
-  float m_grid = 0.01;
-  float m_level = 20;
-  float m_error = 0.005;
-  float m_iso = 0;
+  
 
   PointSet *_ps = new PointSet;
   _ps->setPointSize(input->GetNumberOfPoints());
@@ -86,7 +88,7 @@ int vtkMPU::RequestData(vtkInformation *vtkNotUsed(request),
   float sizeY = max[1] - min[1];
   float sizeZ = max[2] - min[2];
   //  float size = MAX(sizeX, MAX(sizeY, sizeZ))*0.5f*m_box;
-  float size = std::max(sizeX, std::max(sizeY, sizeZ))*0.5f*m_box;
+  float size = std::max(sizeX, std::max(sizeY, sizeZ))*0.5f*Box;
   float maxC[3], minC[3];
   minC[0] = mid[0] - size;
   minC[1] = mid[1] - size;
@@ -99,15 +101,15 @@ int vtkMPU::RequestData(vtkInformation *vtkNotUsed(request),
   ImplicitPOU* _func = new ImplicitPOU;
   _func->imp = new ImplicitOctTree(_ps, minC, maxC);
   _func->setMaxCellN(100000000);
-  _func->imp->_support = m_support;
-  _func->imp->_Nmin = m_nmin;
-  _func->imp->_lambda = m_lambda;
-  _func->imp->_sharp = m_sharp;
-  _func->imp->_edgeT = m_edge;
-  _func->imp->_cornerT = m_corner;
-  _func->_max_level = m_level;
-  _func->_tol = m_error*(float)sqrt(sizeX*sizeX + sizeY*sizeY + sizeZ*sizeZ);
-  _func->_iso = m_iso*(float)sqrt(sizeX*sizeX + sizeY*sizeY + sizeZ*sizeZ);
+  _func->imp->_support = Support;
+  _func->imp->_Nmin = Nmin;
+  _func->imp->_lambda = Lambda;
+  _func->imp->_sharp = Sharp;
+  _func->imp->_edgeT = Edge;
+  _func->imp->_cornerT = Corner;
+  _func->_max_level = Level;
+  _func->_tol = Error*(float)sqrt(sizeX*sizeX + sizeY*sizeY + sizeZ*sizeZ);
+  _func->_iso = Iso*(float)sqrt(sizeX*sizeX + sizeY*sizeY + sizeZ*sizeZ);
   // polygonization
   int N = _ps->_pointN;
   Polygonizer poly;
@@ -131,7 +133,7 @@ int vtkMPU::RequestData(vtkInformation *vtkNotUsed(request),
     }
   _func->count = 0;
 
-  PolygonalMesh* meshMPU = poly.bloomenthal(m_grid*(float)sqrt(sizeX*sizeX + sizeY*sizeY + sizeZ*sizeZ),boxC,box);
+  PolygonalMesh* meshMPU = poly.bloomenthal(Grid*(float)sqrt(sizeX*sizeX + sizeY*sizeY + sizeZ*sizeZ),boxC,box);
 
   // Visualize
   vtkSmartPointer<vtkPolyData> outputMesh = 
