@@ -1,0 +1,109 @@
+<ServerManagerConfiguration>
+  <ProxyGroup name="filters">
+    <!-- ================================================================== -->
+    <SourceProxy name="MPUReconstruction" class="vtkMPUReconstruction" label="MPUReconstruction">
+      <Documentation
+         long_help="Estimate a surface from a set of oriented points."
+         short_help="Estimate a surface from a set of oriented points.">
+      </Documentation>
+
+      <InputProperty
+         name="Input"
+         command="AddInputConnection"
+         clean_command="RemoveAllInputs">
+        <ProxyGroupDomain name="groups">
+          <Group name="sources"/>
+          <Group name="filters"/>
+        </ProxyGroupDomain>
+        <DataTypeDomain name="input_type">
+          <DataType value="vtkPolyData"/>
+        </DataTypeDomain>
+        <Documentation>
+          Set the input oriented point set.
+        </Documentation>
+      </InputProperty>
+
+              <DoubleVectorProperty
+            name="Support"
+            command="SetSupport"
+            number_of_elements="1"
+            default_values="0.75">
+         </DoubleVectorProperty>
+         
+        <DoubleVectorProperty
+            name="Box"
+            command="SetBox"
+            number_of_elements="1"
+            default_values="1.2">
+         </DoubleVectorProperty>
+         
+  <DoubleVectorProperty
+            name="Lambda"
+            command="SetLambda"
+            number_of_elements="1"
+            default_values="0.1">
+         </DoubleVectorProperty>
+  
+           <IntVectorProperty
+            name="Nmin"
+            command="SetNmin"
+            number_of_elements="1"
+            default_values="15">
+         </IntVectorProperty>
+
+           <DoubleVectorProperty
+            name="Edge"
+            command="SetEdge"
+            number_of_elements="1"
+            default_values="0.9">
+         </DoubleVectorProperty>
+  
+                    <DoubleVectorProperty
+            name="Corner"
+            command="SetCorner"
+            number_of_elements="1"
+            default_values="0.7">
+         </DoubleVectorProperty>
+  
+                             <DoubleVectorProperty
+            name="Grid"
+            command="SetGrid"
+            number_of_elements="1"
+            default_values="0.01">
+         </DoubleVectorProperty>
+  
+                    <IntVectorProperty
+            name="Level"
+            command="SetLevel"
+            number_of_elements="1"
+            default_values="20">
+         </IntVectorProperty>
+         
+                                      <DoubleVectorProperty
+            name="Error"
+            command="SetError"
+            number_of_elements="1"
+            default_values="0.005">
+         </DoubleVectorProperty>
+         
+                             <IntVectorProperty
+            name="Iso"
+            command="SetIso"
+            number_of_elements="1"
+            default_values="0">
+         </IntVectorProperty>
+         
+                                      <IntVectorProperty
+            name="Sharp"
+            command="SetSharp"
+            number_of_elements="1"
+            default_values="1">
+                           <BooleanDomain name="bool"/>             
+         </IntVectorProperty>
+         
+
+    </SourceProxy>
+    <!-- End SurfaceReconstruction -->
+  </ProxyGroup>
+  <!-- End Filters Group -->
+</ServerManagerConfiguration>

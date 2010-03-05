@@ -70,7 +70,6 @@ public:
   
 protected:
   vtkMPU();
-  ~vtkMPU();
   
   int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
   
