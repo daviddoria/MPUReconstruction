@@ -36,9 +36,6 @@ vtkMPU::vtkMPU()
   Sharp=true;
 }
 
-vtkMPU::~vtkMPU()
-{}
-
 int vtkMPU::RequestData(vtkInformation *vtkNotUsed(request),
                                              vtkInformationVector **inputVector,
                                              vtkInformationVector *outputVector)
