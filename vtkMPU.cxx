@@ -67,12 +67,12 @@ int vtkMPU::RequestData(vtkInformation *vtkNotUsed(request),
     {
     double p[3];
     input->GetPoint(i, p);
-    cout << "Point " << i << " : " << p[0] << " " << p[1] << " " << p[2] << endl;
+    //cout << "Point " << i << " : " << p[0] << " " << p[1] << " " << p[2] << endl;
     _ps->setPoint(i, p[0], p[1], p[2]);
     
     double n[3];
     normals->GetTuple(i, n);
-    cout << "Normal " << i << " : " << n[0] << " " << n[1] << " " << n[2] << endl;
+    //cout << "Normal " << i << " : " << n[0] << " " << n[1] << " " << n[2] << endl;
     _ps->setNormal(i, n[0], n[1], n[2]);
     }
     
