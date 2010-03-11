@@ -1,7 +1,8 @@
 #include "QuadricOEdge.h"
 #include "ImplicitOctTree.h"
-#include "SVD.h"
-#define PI 3.1415926535897932384626433832795
+
+#include <vnl/algo/vnl_svd.h>
+#include <vnl/vnl_math.h>
 
 #define SVD_T_E 0.001f
 
@@ -85,7 +86,7 @@ QuadricOEdge::QuadricOEdge(PointSet* ps, float R_error, float R_laf, ImplicitOct
     dot = -1.0;
   double angle2 = acos(dot);
   
-  _is_convex = (angle1 + angle2 < PI);
+  _is_convex = (angle1 + angle2 < vnl_math::pi );
   
   /*
   if(R_error == 0){
@@ -204,13 +205,8 @@ void QuadricOEdge::computeCoefficient(PointSet* ps, float R, ImplicitOctCell *ce
   t2[2] = n[0]*t1[1] - n[1]*t1[0];
   
   //least square fitting
-  float **A = new float*[7];
-  float b[7];
-  for(int i=1; i<7; i++){
-    A[i] = new float[7];
-    A[i][1] = A[i][2] = A[i][3] = A[i][4] = A[i][5] = A[i][6] = 
-    b[i] = 0;
-  }
+  vnl_matrix< float > A( 6, 6, 0. );
+  vnl_vector< float > b( 6, 0. );
   
   for(int i=start; i<end; i++){
     int in = index_list[i];
@@ -240,8 +236,8 @@ void QuadricOEdge::computeCoefficient(PointSet* ps, float R, ImplicitOctCell *ce
     
     for(int j=0; j<6; j++){
       for(int k=0; k<6; k++)
-        A[j+1][k+1] += tmp[j]*tmp[k];
-      b[j+1] += w*tmp[j]*g;
+        A[j][k] += tmp[j]*tmp[k];
+      b[j] += w*tmp[j]*g;
     }
   }
   /*
@@ -251,17 +247,16 @@ void QuadricOEdge::computeCoefficient(PointSet* ps, float R, ImplicitOctCell *ce
     b[j+1] /= (float)totalW;
   }*/
   
-  for(int i=2; i<7; i++)
-    for(int j=1; j<i; j++)
+  for(int i=1; i<6; i++)
+    for(int j=0; j<i; j++)
       A[i][j] = A[j][i];
   
-  float w[7];
-  float **v = new float*[7];
-  for(int i=1; i<7; i++)
-    v[i] = new float[7];
-  SVD::svdcmp(A, 6,  6, w, v);
+  vnl_svd< float > svd( A );
+
+  vnl_vector< float > w = svd.W().diagonal();
+  
   float wmax=0.0f;
-  for (int k=1;k<7;k++)
+  for (int k=0;k<6;k++)
     if (fabs(w[k]) > wmax) wmax=(float)fabs(w[k]);
   
   if(wmax < 0.00000000001f){
@@ -283,28 +278,16 @@ void QuadricOEdge::computeCoefficient(PointSet* ps, float R, ImplicitOctCell *ce
     }
     return;
   }
+
+  svd.zero_out_relative( SVD_T_E );
+  vnl_vector< float > x = svd.solve( b );
   
-  float wmin=wmax*SVD_T_E;
-  for (int k=1;k<7;k++){
-    if (fabs(w[k]) < wmin) 
-      w[k]=0.0;
-  }
-  float x[7];
-  SVD::svbksb(A, w, v, 6, 6, b, x);
-  
-  float c0 = x[1];
-  float cu = x[2];
-  float cv = x[3];
-  float cuu = x[4];
-  float cuv = x[5];
-  float cvv = x[6];
-  
-  for(int i=1; i<7; i++){
-    delete[] A[i];
-    delete[] v[i];
-  }
-  delete[] v;
-  delete[] A;
+  float c0 = x[0];
+  float cu = x[1];
+  float cv = x[2];
+  float cuu = x[3];
+  float cuv = x[4];
+  float cvv = x[5];
   
   //convert into world coordinates (u, x, w) -> (x, y, z)
   float cx = n[0] - cu*t1[0] - cv*t2[0];

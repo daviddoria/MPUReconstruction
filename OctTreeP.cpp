@@ -5,7 +5,7 @@
 //#include "stdafx.h"
 #include "OctTreeP.h"
 #include "math.h"
-#include "SVD.h"
+#include <vnl/algo/vnl_svd.h>
 #include "PolygonalMesh.h"
 
 static int EDGE[12][2] = {{0,1}, {2,3}, {1,3}, {0,2},
@@ -1567,17 +1567,8 @@ void OctTreeP::simplifyCell(Cell *c, float tol)
 
 void OctTreeP::computeOptP(float P[], double Q[], Cell* c)
 {
-	float **A = new float*[4];
-	A[1] = new float[4];
-	A[2] = new float[4];
-	A[3] = new float[4];
-	float *w = new float[4];
-	float **v = new float*[4];
-	v[1] = new float[4];
-	v[2] = new float[4];
-	v[3] = new float[4];
-	float *b = new float[4];
-	float *x = new float[4];
+  vnl_matrix< float > A( 3, 3 ); 
+  vnl_vector<float> b(3), x(3);
 
 	A[1][1] = Q[0];
 	A[2][1] = A[1][2] = Q[1];
@@ -1599,22 +1590,10 @@ void OctTreeP::computeOptP(float P[], double Q[], Cell* c)
 	//b[2] = -Q[7];
 	//b[3] = -Q[8];
 
-	SVD::svdcmp(A, 3, 3, w, v);
-		
-	float wmax=0.0f;
-	for (int k=1;k<=3;k++)
-		if (w[k] > wmax) wmax=w[k];
-	if(wmax < 0.0000001){
-		P[0] = P[1] = P[2] = 0;
-		return;
-	}
+  vnl_svd<float> svd( A );
+  svd.zero_out_absolute( 0.0000001 );
 
-	float wmin=wmax*0.001;
-		for (int k=1;k<=3;k++){
-		if (w[k] < wmin) w[k]=0.0;
-	}
-
-	SVD::svbksb(A, w, v, 3, 3, b, x);
+  x = svd.solve( b );
 
 	P[0] = cen[0] + x[1];
 	P[1] = cen[1] + x[2];

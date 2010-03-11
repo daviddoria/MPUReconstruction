@@ -7,6 +7,13 @@ IF ( VTK_FOUND)
 	INCLUDE( ${USE_VTK_FILE} )
 ENDIF( VTK_FOUND)
 
+# only to get the svd with right license!
+FIND_PACKAGE(ITK)
+IF(ITK_FOUND)
+  INCLUDE(${ITK_USE_FILE})
+ENDIF(ITK_FOUND)
+########################################
+
 SET(BUILD_PARAVIEW_PLUGIN OFF CACHE BOOL "Build Paraview plugin?")
 
 if(BUILD_PARAVIEW_PLUGIN)
@@ -15,6 +22,7 @@ endif(BUILD_PARAVIEW_PLUGIN)
 
 INCLUDE_DIRECTORIES(  
   ${Braude_SOURCE_DIR}
+  ${ITK_INCLUDE_DIRS}
 )
  
 ADD_EXECUTABLE(MPU
@@ -25,7 +33,6 @@ Polygonizer.cpp
 PolygonalMesh.cpp
 OctTreeP.cpp
 ImplicitOctTree.cpp
-SVD.cpp
 Bloomenthal.cpp
 QuadricOEdge.cpp
 Quadric.cpp
@@ -43,6 +50,7 @@ vtkIO
 vtkFiltering 
 vtkCommon
 vtkVolumeRendering
+ITKNumerics
 )  
 
 

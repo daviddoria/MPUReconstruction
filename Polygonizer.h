@@ -3,7 +3,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "PolygonalMesh.h"
-// #include "SVD.h"
+#include <vnl/algo/vnl_svd.h>
 #include "OctTreeP.h"
 
 class Polygonizer  

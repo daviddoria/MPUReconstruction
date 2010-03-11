@@ -1,6 +1,7 @@
 #include "Quadric.h"
 #include "ImplicitOctTree.h"
-#include "SVD.h"
+
+#include <vnl/algo/vnl_svd.h>
 
 #define SVD_T 0.0000001f
 #define NEAR 6
@@ -47,8 +48,8 @@ void Quadric::computePolySVD2(PointSet* ps, float R, ImplicitOctCell *cell,
   }
   
   //For SVD
-  float** A= new float*[listN+adN+1];
-  float* b = new float[listN+adN+1];
+  vnl_matrix< float > A(listN+adN, 10, 0. );
+  vnl_vector< float > b(listN+adN, 0. );
   
   float size = cell->_size;
   
@@ -104,20 +105,20 @@ void Quadric::computePolySVD2(PointSet* ps, float R, ImplicitOctCell *cell,
     vx = p[0] - o[0];
     vy = p[1] - o[1];
     vz = p[2] - o[2];
+
+    float* Ai = A[i];
+    Ai[0] = w;
+    Ai[1] = w*vx;
+    Ai[2] = w*vy;
+    Ai[3] = w*vz;
+    Ai[4] = w*vx*vx;
+    Ai[5] = w*vy*vy;
+    Ai[6] = w*vz*vz;
+    Ai[7] = w*vx*vy;
+    Ai[8] = w*vy*vz;
+    Ai[9] = w*vz*vx;
     
-    float* Ai = A[i+1] = new float[11];
-    Ai[1] = w;
-    Ai[2] = w*vx;
-    Ai[3] = w*vy;
-    Ai[4] = w*vz;
-    Ai[5] = w*vx*vx;
-    Ai[6] = w*vy*vy;
-    Ai[7] = w*vz*vz;
-    Ai[8] = w*vx*vy;
-    Ai[9] = w*vy*vz;
-    Ai[10] = w*vz*vx;
-    
-    b[i+1] = 0;
+    b[i] = 0;
     
     //near points
     for(int j=0; j<adN; j++){
@@ -143,8 +144,8 @@ void Quadric::computePolySVD2(PointSet* ps, float R, ImplicitOctCell *cell,
     }
   }
   
-  for(int i=1; i<listN+1; i++){
-    for(int j=1; j<11; j++)
+  for(int i=0; i<listN; i++){
+    for(int j=0; j<10; j++)
       A[i][j] /= (float)totalW;
   }
   
@@ -176,7 +177,7 @@ void Quadric::computePolySVD2(PointSet* ps, float R, ImplicitOctCell *cell,
       continue;
     
     count++;
-    float* Ai = A[count+listN] = new float[11];
+    float* Ai = A[count+listN-1];
     
     float w = 1.0f/adN;
     
@@ -195,44 +196,16 @@ void Quadric::computePolySVD2(PointSet* ps, float R, ImplicitOctCell *cell,
     Ai[9] = w*vy*vz;
     Ai[10] = w*vz*vx;
     
-    b[count+listN] = (float)v*w;
+    b[count+listN-1] = (float)v*w;
   }
   delete[] ad_d;
   delete[] ad_point;
   delete[] ad_i;
-  
-  float w[11];
-  float **v = new float*[11];
-  for(int i=1; i<11; i++)
-    v[i] = new float[11];
-  SVD::svdcmp(A, listN+count-1, 10, w, v);
-  
-  float wmax=0.0f;
-  for (int k=1;k<11;k++)
-    if (fabs(w[k]) > wmax) wmax=(float)fabs(w[k]);
-  
-  if(wmax < 0.000000000001f || count == 0){
-    for(int i=1; i<listN+count; i++)
-      delete[] A[i];
-    delete[] A;
-    
-    for(int i=1; i<11; i++)
-      delete[] v[i];
-    delete[] v;
-    
-    delete[] b;
-    
-    return;
-  }
-  
-  float wmin=wmax*SVD_T;
-  for (int k=1;k<11;k++){
-    if (fabs(w[k]) < wmin) 
-      w[k]=0.0;
-  }
-  
-  float x[11];
-  SVD::svbksb(A, w, v, listN+count-1, 10, b, x);
+
+  vnl_svd< float > svd( A );
+  svd.zero_out_relative( SVD_T );
+
+  vnl_vector< float > x = svd.solve( b );
   
   _cxx = x[5];
   _cyy = x[6];
@@ -249,17 +222,6 @@ void Quadric::computePolySVD2(PointSet* ps, float R, ImplicitOctCell *cell,
   _c0 = x[1] - x[2]*o[0] - x[3]*o[1] - x[4]*o[2] 
         + _cxy*o[0]*o[1] + _cyz*o[1]*o[2] + _czx*o[2]*o[0]
         + _cxx*o[0]*o[0] + _cyy*o[1]*o[1] + _czz*o[2]*o[2];
-  
-  for(int i=1; i<listN+count; i++)
-    delete[] A[i];
-  delete[] A;
-  
-  
-  for(int i=1; i<11; i++)
-    delete[] v[i];
-  delete[] v;
-  
-  delete[] b;
 }
 
 void Quadric::computePolySVD(PointSet* ps, float R, ImplicitOctCell *cell, 
@@ -276,15 +238,8 @@ void Quadric::computePolySVD(PointSet* ps, float R, ImplicitOctCell *cell,
   cell->cellCenter(c);
   
   //For SVD
-  float** A= new float*[11];
-  for(int i=1; i<11; i++){
-    A[i] = new float[11];
-    A[i][1] = A[i][2] = A[i][3] = 
-      A[i][4] = A[i][5] = A[i][6] =
-        A[i][7] = A[i][8] = A[i][9] = A[i][10] = 0;
-  }
-  float b[11];
-  b[1] = b[2] = b[3] = b[4] = b[5] = b[6] = b[7] = b[8] = b[9] = b[10] = 0;
+  vnl_matrix< float > A( 10, 10, 0. );
+  vnl_vector< float > b( 10, 0. );
   
   //additional points
   int adN = 9;
@@ -367,7 +322,7 @@ void Quadric::computePolySVD(PointSet* ps, float R, ImplicitOctCell *cell,
     
     for(int j=0; j<10; j++){
       for(int k=j; k<10; k++)
-        A[j+1][k+1] += x[j]*x[k];
+        A[j][k] += x[j]*x[k];
     }
     
     //near points
@@ -394,9 +349,9 @@ void Quadric::computePolySVD(PointSet* ps, float R, ImplicitOctCell *cell,
     }
   }
   
-  for(int i=1; i<11; i++){
-    for(int j=i; j<11; j++)
-      A[i][j] /= (float)totalW;
+  for(int i=0; i<10; i++){
+    for(int j=i; j<10; j++)
+      A[i][j] /= static_cast<float>(totalW);
   }
   
   //Extra points
@@ -448,72 +403,39 @@ void Quadric::computePolySVD(PointSet* ps, float R, ImplicitOctCell *cell,
     
     for(int j=0; j<10; j++){
       for(int k=j; k<10; k++)
-        A[j+1][k+1] += x[j]*x[k];
-      b[j+1] += (float)(x[j]*v*w);
+        A[j][k] += x[j]*x[k];
+      b[j] += static_cast<float>(x[j]*v*w);
     }
   }
   delete[] ad_d;
   delete[] ad_point;
   delete[] ad_i;
   
-  for(int i=2; i<11; i++)
-    for(int j=1; j<i; j++)
+  for(int i=1; i<10; i++)
+    for(int j=0; j<i; j++)
       A[i][j] = A[j][i];
+
+  vnl_svd< float > svd( A );
+  svd.zero_out_relative( SVD_T );
+
+  vnl_vector< float > x = svd.solve( b );
   
-  float w[11];
-  float **v = new float*[11];
-  for(int i=1; i<11; i++)
-    v[i] = new float[11];
-  SVD::svdcmp(A, 10, 10, w, v);
+  _cxx = x[4];
+  _cyy = x[5];
+  _czz = x[6];
   
-  float wmax=0.0f;
-  for (int k=1;k<11;k++)
-    if (fabs(w[k]) > wmax) wmax=(float)fabs(w[k]);
+  _cxy = x[7];
+  _cyz = x[8];
+  _czx = x[9];
   
-  if(wmax < 0.000000000001f || count == 0){
-    _cxx = _cyy = _czz = _cxy = _cyz = _czx = _cx = _cy = _cz = 0;
-	_c0 = 10000000;
-    for(int i=1; i<11; i++){
-      delete[] A[i];
-      delete[] v[i];
-    }
-    delete[] A;
-    delete[] v;
-    return;
-  }
+  _cx = x[1] - _cxy*o[1] - _czx*o[2] - 2.0f*_cxx*o[0];
+  _cy = x[2] - _cyz*o[2] - _cxy*o[0] - 2.0f*_cyy*o[1];
+  _cz = x[3] - _czx*o[0] - _cyz*o[1] - 2.0f*_czz*o[2];
   
-  float wmin=wmax*0.0000001f;
-  for (int k=1;k<11;k++){
-    if (fabs(w[k]) < wmin) 
-      w[k]=0.0;
-  }
-  
-  float x[11];
-  SVD::svbksb(A, w, v, 10, 10, b, x);
-  
-  _cxx = x[5];
-  _cyy = x[6];
-  _czz = x[7];
-  
-  _cxy = x[8];
-  _cyz = x[9];
-  _czx = x[10];
-  
-  _cx = x[2] - _cxy*o[1] - _czx*o[2] - 2.0f*_cxx*o[0];
-  _cy = x[3] - _cyz*o[2] - _cxy*o[0] - 2.0f*_cyy*o[1];
-  _cz = x[4] - _czx*o[0] - _cyz*o[1] - 2.0f*_czz*o[2];
-  
-  _c0 = x[1] - x[2]*o[0] - x[3]*o[1] - x[4]*o[2] 
+  _c0 = x[0] - x[1]*o[0] - x[2]*o[1] - x[3]*o[2]
         + _cxy*o[0]*o[1] + _cyz*o[1]*o[2] + _czx*o[2]*o[0]
         + _cxx*o[0]*o[0] + _cyy*o[1]*o[1] + _czz*o[2]*o[2];
   
-  
-  for(int i=1; i<11; i++){
-    delete[] A[i];
-    delete[] v[i];
-  }
-  delete[] A;
-  delete[] v;
 }
 
 float Quadric::computeMaxError(PointSet* ps, float R, ImplicitOctCell *cell, 

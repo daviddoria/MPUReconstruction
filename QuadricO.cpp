@@ -1,6 +1,7 @@
 #include "QuadricO.h"
 #include "ImplicitOctTree.h"
-#include "SVD.h"
+
+#include <vnl/algo/vnl_svd.h>
 
 #define SVD_T_O 0.00001f
 
@@ -39,15 +40,9 @@ QuadricO::QuadricO(PointSet* ps, float R_error, float R_laf, ImplicitOctCell *ce
   t2[2] = n[0]*t1[1] - n[1]*t1[0];
   
   //least square fitting
-  float x[7];
-    float **A = new float*[7];
-    float b[7];
-    for(int i=1; i<7; i++){
-      A[i] = new float[7];
-      A[i][1] = A[i][2] = A[i][3] = A[i][4] = A[i][5] = A[i][6] = 0;
-      b[i] = 0;
-    }
-    
+  vnl_matrix< float > A( 6, 6, 0. );
+  vnl_vector< float > b( 6, 0. );
+
     double totalW = 0;
     for(int i=0; i<listN; i++){
       int in = index_list[i];
@@ -80,8 +75,8 @@ QuadricO::QuadricO(PointSet* ps, float R_error, float R_laf, ImplicitOctCell *ce
       
       for(int j=0; j<6; j++){
         for(int k=j; k<6; k++)
-          A[j+1][k+1] += tmp[j]*tmp[k];
-        b[j+1] += tmp[j]*g;
+          A[j][k] += tmp[j]*tmp[k];
+        b[j] += tmp[j]*g;
       }
     }
     /*
@@ -91,50 +86,22 @@ QuadricO::QuadricO(PointSet* ps, float R_error, float R_laf, ImplicitOctCell *ce
       b[i] /= (float)totalW;
     }*/
     
-    for(int i=2; i<7; i++)
-      for(int j=1; j<i; j++)
+    for(int i=1; i<6; i++)
+      for(int j=0; j<i; j++)
         A[i][j] = A[j][i];
     
-    float w[7];
-    float **v = new float*[7];
-    for(int i=1; i<7; i++)
-      v[i] = new float[7];
-    SVD::svdcmp(A, 6, 6, w, v);
-    float wmax=0.0f;
-    for (int k=1;k<7;k++)
-      if (fabs(w[k]) > wmax) wmax=(float)fabs(w[k]);
+    vnl_svd< float > svd( A );
+    svd.zero_out_relative( SVD_T_O );
+
+    vnl_vector< float > x = svd.solve( b );
     
-    if(wmax < 0.000000000001f){
-      for(int i=1; i<7; i++){
-        delete[] A[i];
-        delete[] v[i];
-      }
-      delete[] A;
-      delete[] v;
-      return;
-    }
-    
-    float wmin=wmax*SVD_T_O;
-    for (int k=1;k<7;k++){
-      if (fabs(w[k]) < wmin) 
-        w[k]=0.0;
-    }
-    
-    SVD::svbksb(A, w, v, 6, 6, b, x);
-    
-    for(int i=1; i<7; i++){
-      delete[] A[i];
-      delete[] v[i];
-    }
-    delete[] v;
-    delete[] A;
-  
-  float c0 = x[1];
-  float cu = x[2];
-  float cv = x[3];
-  float cuu = x[4];
-  float cuv = x[5];
-  float cvv = x[6];
+
+  float c0 = x[0];
+  float cu = x[1];
+  float cv = x[2];
+  float cuu = x[3];
+  float cuv = x[4];
+  float cvv = x[5];
   
   //convert into world coordinates (u, v, w) -> (x, y, z)
   _cxx = -(cuu*t1[0]*t1[0] + cvv*t2[0]*t2[0] + cuv*t1[0]*t2[0]);

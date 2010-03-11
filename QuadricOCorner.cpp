@@ -1,7 +1,8 @@
 #include "QuadricOCorner.h"
 #include "ImplicitOctTree.h"
-#include "SVD.h"
-#define PI 3.1415926535897932384626433832795
+
+#include <vnl/algo/vnl_svd.h>
+#include <vnl/vnl_math.h>
 
 #define SVD_T_C 0.001f
 
@@ -150,7 +151,7 @@ QuadricOCorner::QuadricOCorner(PointSet* ps, float R_error, float R_laf, Implici
         dot = -1.0;
       double angle2 = acos(dot);
       
-      op_tmp[i] = (angle1 + angle2 < PI);
+      op_tmp[i] = (angle1 + angle2 < vnl_math::pi );
     }
     
     if(op_tmp[0] && op_tmp[1] && op_tmp[2])
@@ -214,7 +215,7 @@ QuadricOCorner::QuadricOCorner(PointSet* ps, float R_error, float R_laf, Implici
           dot = -1.0;
         double angle2 = acos(dot);
         
-        op_tmp[k++] = (angle1 + angle2 < PI);
+        op_tmp[k++] = (angle1 + angle2 < vnl_math::pi);
       }
     }
     OK = true;
@@ -342,13 +343,8 @@ void QuadricOCorner::computeCoefficient(PointSet* ps, float R, ImplicitOctCell *
   t2[2] = n[0]*t1[1] - n[1]*t1[0];
   
   //least square fitting
-  float **A = new float*[7];
-  float b[7];
-  for(int i=1; i<7; i++){
-    A[i] = new float[7];
-    A[i][1] = A[i][2] = A[i][3] = A[i][4] = A[i][5] = A[i][6] = 
-    b[i] = 0;
-  }
+  vnl_matrix< float > A( 6, 6, 0. );
+  vnl_vector< float > b( 6, 0. );
   
   for(int i=start; i<end; i++){
     int in = index_list[i];
@@ -378,12 +374,12 @@ void QuadricOCorner::computeCoefficient(PointSet* ps, float R, ImplicitOctCell *
     
     for(int j=0; j<6; j++){
       for(int k=j; k<6; k++)
-        A[j+1][k+1] += tmp[j]*tmp[k];
-      b[j+1] += w*tmp[j]*g;
+        A[j][k] += tmp[j]*tmp[k];
+      b[j] += w*tmp[j]*g;
     }
   }
-  for(int i=2; i<7; i++)
-    for(int j=1; j<i; j++)
+  for(int i=1; i<6; i++)
+    for(int j=0; j<i; j++)
       A[i][j] = A[j][i];
   
   /*
@@ -393,46 +389,17 @@ void QuadricOCorner::computeCoefficient(PointSet* ps, float R, ImplicitOctCell *
       b[j+1] /= (float)totalW;
   }*/
   
-  float w[7];
-  float **v = new float*[7];
-  for(int i=1; i<7; i++)
-    v[i] = new float[7];
-  SVD::svdcmp(A, 6, 6, w, v);
-  float wmax=0.0f;
-  for (int k=1;k<7;k++)
-    if (fabs(w[k]) > wmax) wmax=(float)fabs(w[k]);
+  vnl_svd< float > svd( A );
+  svd.zero_out_relative( SVD_T_C );
+
+  vnl_vector< float > x = svd.solve( b );
   
-  if(wmax < 0.00000000001f){
-    _cxx[f_index] = _cyy[f_index] = _czz[f_index] = 0;
-    _cxy[f_index] = _cyz[f_index] = _czx[f_index] = 0;
-    _cx[f_index] = n[0];
-    _cy[f_index] = n[1];
-    _cz[f_index] = n[2];
-    _c0[f_index] = -(n[0]*o[0] + n[1]*o[1] + n[2]*o[2]);
-    return;
-  }
-  
-  float wmin=wmax*SVD_T_C;
-  for (int k=1;k<7;k++){
-    if (fabs(w[k]) < wmin) 
-      w[k]=0.0;
-  }
-  float x[7];
-  SVD::svbksb(A, w, v, 6, 6, b, x);
-  
-  float c0 = x[1];
-  float cu = x[2];
-  float cv = x[3];
-  float cuu = x[4];
-  float cuv = x[5];
-  float cvv = x[6];
-  
-  for(int i=1; i<7; i++){
-    delete[] A[i];
-    delete[] v[i];
-  }
-  delete[] v;
-  delete[] A;
+  float c0 = x[0];
+  float cu = x[1];
+  float cv = x[2];
+  float cuu = x[3];
+  float cuv = x[4];
+  float cvv = x[5];
   
   //convert into world coordinates (u, x, w) -> (x, y, z)
   float cx = n[0] - cu*t1[0] - cv*t2[0];

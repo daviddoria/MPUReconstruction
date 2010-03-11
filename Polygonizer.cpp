@@ -4,7 +4,7 @@
 
 //#include "stdafx.h"
 #include "Polygonizer.h"
-#include "SVD.h"
+#include <vnl/algo/vnl_svd.h>
 #include "PolygonalMesh.h"
 #include "Bloomenthal.h"
 
@@ -414,17 +414,9 @@ PolygonalMesh* Polygonizer::computeSurfaceNetSIG02(float epsilon, float tau)
 	
 	//FOR SVD
 			
-	float **A = new float*[4];
-	A[1] = new float[4];
-	A[2] = new float[4];
-	A[3] = new float[4];
-	float *w = new float[4];
-	float **v = new float*[4];
-	v[1] = new float[4];
-	v[2] = new float[4];
-	v[3] = new float[4];
-	float *b = new float[4];
-	float *x = new float[4];
+	vnl_matrix< float > A( 3, 3, 0. ); 
+	vnl_vector< float > b(3, 0.), x(3, 0.);
+
 	for(int i=0; i<vertex_N; i++){
 		if(degree[i] == 0)
 			continue;
@@ -432,39 +424,25 @@ PolygonalMesh* Polygonizer::computeSurfaceNetSIG02(float epsilon, float tau)
 		vertex[i][1] /= degree[i];
 		vertex[i][2] /= degree[i];
 continue;
-		A[1][1] = (float)Q[i][0];
-		A[2][1] = A[1][2] = (float)Q[i][1];
-		A[3][1] = A[1][3] = (float)Q[i][2];
-		A[2][2] = (float)Q[i][3];
-		A[2][3] = A[3][2] = (float)Q[i][4];
-		A[3][3] = (float)Q[i][5];
+		A[0][0] = (float)Q[i][0];
+		A[1][0] = A[0][1] = (float)Q[i][1];
+		A[2][0] = A[0][2] = (float)Q[i][2];
+		A[1][1] = (float)Q[i][3];
+		A[1][2] = A[2][1] = (float)Q[i][4];
+		A[2][2] = (float)Q[i][5];
 
 		float Av[3];
 		MAT_BY_VEC(Av, Q[i], vertex[i]);
-		b[1] = -(float)Q[i][6] - Av[0];
-		b[2] = -(float)Q[i][7] - Av[1];
-		b[3] = -(float)Q[i][8] - Av[2];
+		b[0] = -(float)Q[i][6] - Av[0];
+		b[1] = -(float)Q[i][7] - Av[1];
+		b[2] = -(float)Q[i][8] - Av[2];
 
-//     vtkMath::SingularValueDecomposition3x3( );
-		SVD::svdcmp(A, 3, 3, w, v);
-		
-		float wmax=0.0f;
-		for (int k=1;k<=3;k++)
-			if (fabs(w[k]) > wmax) wmax=(float)fabs(w[k]);
-		if(wmax < 0.0000001)
-			continue;
-		float wmin=wmax*(tau);
-		for (int k=1;k<=3;k++){
-			if (fabs(w[k]) < wmin) w[k]=0.0;
-		}
+    vnl_svd<float> svd( A );
+    svd.zero_out_absolute( 0.0000001 );
 
-		/*
-		for(int k=1;k<=3;k++)
-			if(fabs(w[k]) < tau) w[k] = 0.0;*/
-			
+    x = svd.solve( b );
 
-		SVD::svbksb(A, w, v, 3, 3, b, x);
-		if(fabs(x[1]) > spaceX || fabs(x[2]) > spaceY || fabs(x[3]) > spaceZ)
+    if(fabs(x[1]) > spaceX || fabs(x[2]) > spaceY || fabs(x[3]) > spaceZ)
 			continue;
 
 		mesh->vertex[i][0] += x[1];
@@ -1168,17 +1146,9 @@ PolygonalMesh* Polygonizer::computeSurfaceNerLinear(float epsilon, float tau)
 	
 	//FOR SVD
 			
-	float **A = new float*[4];
-	A[1] = new float[4];
-	A[2] = new float[4];
-	A[3] = new float[4];
-	float *w = new float[4];
-	float **v = new float*[4];
-	v[1] = new float[4];
-	v[2] = new float[4];
-	v[3] = new float[4];
-	float *b = new float[4];
-	float *x = new float[4];
+  vnl_matrix< float > A( 3, 3, 0. ); 
+  vnl_vector<float> b( 3, 0. );
+
 	for(int i=0; i<vertex_N; i++){
 		if(degree[i] == 0)
 			continue;
@@ -1186,12 +1156,12 @@ PolygonalMesh* Polygonizer::computeSurfaceNerLinear(float epsilon, float tau)
 		vertex[i][1] /= degree[i];
 		vertex[i][2] /= degree[i];
 continue;
-		A[1][1] = (float)Q[i][0];
-		A[2][1] = A[1][2] = (float)Q[i][1];
-		A[3][1] = A[1][3] = (float)Q[i][2];
-		A[2][2] = (float)Q[i][3];
-		A[2][3] = A[3][2] = (float)Q[i][4];
-		A[3][3] = (float)Q[i][5];
+		A[0][0] = (float)Q[i][0];
+		A[1][0] = A[0][1] = (float)Q[i][1];
+		A[2][0] = A[0][2] = (float)Q[i][2];
+		A[1][1] = (float)Q[i][3];
+		A[1][2] = A[2][1] = (float)Q[i][4];
+		A[2][2] = (float)Q[i][5];
 
 		float Av[3];
 		MAT_BY_VEC(Av, Q[i], vertex[i]);
@@ -1199,24 +1169,11 @@ continue;
 		b[2] = -(float)Q[i][7] - Av[1];
 		b[3] = -(float)Q[i][8] - Av[2];
 
-		SVD::svdcmp(A, 3, 3, w, v);
-		
-		float wmax=0.0f;
-		for (int k=1;k<=3;k++)
-			if (fabs(w[k]) > wmax) wmax=(float)fabs(w[k]);
-		if(wmax < 0.0000001)
-			continue;
-		float wmin=wmax*(tau);
-		for (int k=1;k<=3;k++){
-			if (fabs(w[k]) < wmin) w[k]=0.0;
-		}
+    vnl_svd<float> svd( A );
+    svd.zero_out_absolute( tau );
 
-		/*
-		for(int k=1;k<=3;k++)
-			if(fabs(w[k]) < tau) w[k] = 0.0;*/
-			
+    vnl_vector< float > x = svd.solve( b );
 
-		SVD::svbksb(A, w, v, 3, 3, b, x);
 		if(fabs(x[1]) > spaceX || fabs(x[2]) > spaceY || fabs(x[3]) > spaceZ)
 			continue;
 
@@ -1378,24 +1335,16 @@ PolygonalMesh* Polygonizer::computeSurfaceNetOctTree(float tol, int min, int max
 
 	//FOR SVD
 			
-	float **A = new float*[4];
-	A[1] = new float[4];
-	A[2] = new float[4];
-	A[3] = new float[4];
-	float *w = new float[4];
-	float **v = new float*[4];
-	v[1] = new float[4];
-	v[2] = new float[4];
-	v[3] = new float[4];
-	float *b = new float[4];
-	float *x = new float[4];
+  vnl_matrix< float > A( 3, 3, 0. );
+  
+  vnl_vector<float> b( 3, 0. ), x( 3, 0. );
 	for(int i=0; i<vertex_N; i++){
-		A[1][1] = Q[i][0];
-		A[2][1] = A[1][2] = Q[i][1];
-		A[3][1] = A[1][3] = Q[i][2];
-		A[2][2] = Q[i][3];
-		A[2][3] = A[3][2] = Q[i][4];
-		A[3][3] = Q[i][5];
+		A[0][0] = Q[i][0];
+		A[1][0] = A[0][1] = Q[i][1];
+		A[2][0] = A[0][2] = Q[i][2];
+		A[1][1] = Q[i][3];
+		A[1][2] = A[2][1] = Q[i][4];
+		A[2][2] = Q[i][5];
 
 		float tmp[3];
 		MAT_BY_VEC(tmp, Q[i], mesh->vertex[i]);
@@ -1404,23 +1353,9 @@ PolygonalMesh* Polygonizer::computeSurfaceNetOctTree(float tol, int min, int max
 		b[2] = -Q[i][7] - tmp[1];
 		b[3] = -Q[i][8] - tmp[2];
 		
-		SVD::svdcmp(A, 3, 3, w, v);
-		
-		float wmax=0.0f;
-		for (int k=1;k<=3;k++)
-			if (w[k] > wmax) wmax=w[k];
-		if(wmax < 0.0000001)
-			continue;
-		float wmin=wmax*(0.025);
-		for (int k=1;k<=3;k++){
-			if (w[k] < wmin) w[k]=0.0;
-		}
-		
-		//for(int k=1;k<=3;k++)
-			//if(fabs(w[k]) < 0.1) w[k] = 0.0;
-			
-
-		SVD::svbksb(A, w, v, 3, 3, b, x);
+        vnl_svd< float > svd( A );
+        svd.zero_out_relative( 0.025 );
+		x = svd.solve( b );
 
 		mesh->vertex[i][0] += x[1];
 		mesh->vertex[i][1] += x[2];

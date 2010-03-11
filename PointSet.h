@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cmath>
 #include <limits>
+#include <vnl/vnl_math.h>
 
 // Dummy
 class ImplicitOctTree;
@@ -193,9 +194,9 @@ public:
   
   void rotate(float rx, float ry, float rz)
   {
-    rx = (float)(rx*M_PI/180.0);
-    ry = (float)(ry*M_PI/180.0);
-    rz = (float)(rz*M_PI/180.0);
+    rx = (float)(rx*vnl_math::pi/180.0);
+    ry = (float)(ry*vnl_math::pi/180.0);
+    rz = (float)(rz*vnl_math::pi/180.0);
     if(rx != 0)
     {
       double s = sin(rx);
