@@ -39,6 +39,7 @@ Quadric.cpp
 QuadricO.cpp
 QuadricOCorner.cpp
 AxisKdTree.cpp
+vtkMPUImplicitFunction.cxx
 )
 
 TARGET_LINK_LIBRARIES(MPU

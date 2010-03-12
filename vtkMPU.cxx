@@ -17,6 +17,11 @@
 #include "ImplicitOctTree.h"
 #include "Polygonizer.h"
 
+#include "vtkMPUImplicitFunction.h"
+#include "vtkSampleFunction.h"
+#include "vtkImageData.h"
+#include "vtkMarchingCubes.h"
+
 vtkCxxRevisionMacro(vtkMPU, "$Revision: 1.70 $");
 vtkStandardNewMacro(vtkMPU);
 
@@ -34,6 +39,19 @@ vtkMPU::vtkMPU()
   Error = 0.005;
   Iso = 0;
   Sharp=true;
+  Bloomenthal = false;
+
+  min[0] = min[1] = min[2] = 0.;
+  max[0] = max[1] = max[2] = 0.;
+
+  ImplicitImage = vtkImageData::New();
+  _func = new ImplicitPOU;
+}
+
+vtkMPU::~vtkMPU()
+{
+  ImplicitImage->Delete();
+  delete _func;
 }
 
 int vtkMPU::RequestData(vtkInformation *vtkNotUsed(request),
@@ -52,9 +70,6 @@ int vtkMPU::RequestData(vtkInformation *vtkNotUsed(request),
   vtkPolyData *output = vtkPolyData::SafeDownCast(
       outInfo->Get(vtkDataObject::DATA_OBJECT()));
     
-  
-  
-
   PointSet *_ps = new PointSet;
   _ps->setPointSize(input->GetNumberOfPoints());
   
@@ -75,15 +90,14 @@ int vtkMPU::RequestData(vtkInformation *vtkNotUsed(request),
     _ps->setNormal(i, n[0], n[1], n[2]);
     }
     
-  float min[3], max[3];
-  _ps->bound(min, max);
+  _ps->bound(this->min, this->max);
   float mid[3];
-  mid[0] = 0.5f*(min[0] + max[0]);
-  mid[1] = 0.5f*(min[1] + max[1]);
-  mid[2] = 0.5f*(min[2] + max[2]);
-  float sizeX = max[0] - min[0];
-  float sizeY = max[1] - min[1];
-  float sizeZ = max[2] - min[2];
+  mid[0] = 0.5f*(this->min[0] + this->max[0]);
+  mid[1] = 0.5f*(this->min[1] + this->max[1]);
+  mid[2] = 0.5f*(this->min[2] + this->max[2]);
+  float sizeX = this->max[0] - this->min[0];
+  float sizeY = this->max[1] - this->min[1];
+  float sizeZ = this->max[2] - this->min[2];
   //  float size = MAX(sizeX, MAX(sizeY, sizeZ))*0.5f*m_box;
   float size = std::max(sizeX, std::max(sizeY, sizeZ))*0.5f*Box;
   float maxC[3], minC[3];
@@ -94,8 +108,6 @@ int vtkMPU::RequestData(vtkInformation *vtkNotUsed(request),
   maxC[1] = mid[1] + size;
   maxC[2] = mid[2] + size;
 
-
-  ImplicitPOU* _func = new ImplicitPOU;
   _func->imp = new ImplicitOctTree(_ps, minC, maxC);
   _func->setMaxCellN(100000000);
   _func->imp->_support = Support;
@@ -111,7 +123,7 @@ int vtkMPU::RequestData(vtkInformation *vtkNotUsed(request),
   int N = _ps->_pointN;
   Polygonizer poly;
   poly.func = _func;
-  float box[] = {max[0], min[0], max[1], min[1], max[2], min[2]};
+  float box[] = {this->max[0], this->min[0], this->max[1], this->min[1], this->max[2], this->min[2]};
   
   float boxC[] = {0.5f*(box[0]+box[1]), 0.5f*(box[2]+box[3]), 0.5f*(box[4]+box[5])};
   for(int i=0; i<N; i++)
@@ -130,73 +142,118 @@ int vtkMPU::RequestData(vtkInformation *vtkNotUsed(request),
     }
   _func->count = 0;
 
-  PolygonalMesh* meshMPU = poly.bloomenthal(Grid*(float)sqrt(sizeX*sizeX + sizeY*sizeY + sizeZ*sizeZ),boxC,box);
+  if( this->Bloomenthal )
+    {
+    PolygonalMesh* meshMPU = poly.bloomenthal(Grid*(float)sqrt(sizeX*sizeX + sizeY*sizeY + sizeZ*sizeZ),boxC,box);
 
-  // Visualize
-  vtkSmartPointer<vtkPolyData> outputMesh = 
-      vtkSmartPointer<vtkPolyData>::New();
-  vtkSmartPointer<vtkCellArray> outputTriangles = 
-      vtkSmartPointer<vtkCellArray>::New();
-  
-  vtkSmartPointer<vtkPoints> outputPoints = 
-      vtkSmartPointer<vtkPoints>::New();
-  
-  vtkIdType pts[3];
-  
-  vtkSmartPointer<vtkFloatArray> outputNormals = 
-      vtkSmartPointer<vtkFloatArray>::New();
-  // set vertex
-  int numVertex = meshMPU->vertex_N;
-  cout << "There are " << numVertex << " vertices." << endl;
-  outputPoints->SetNumberOfPoints(numVertex);
-  float (*vertexMPU)[3] = meshMPU->vertex;
-  
-  for (int i = 0; i < numVertex; i++)
-    {
-    outputPoints->SetPoint(i, vertexMPU[i]);
+    // Visualize
+    vtkSmartPointer<vtkPolyData> outputMesh = 
+        vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkCellArray> outputTriangles = 
+        vtkSmartPointer<vtkCellArray>::New();
+    
+    vtkSmartPointer<vtkPoints> outputPoints = 
+        vtkSmartPointer<vtkPoints>::New();
+    
+    vtkIdType pts[3];
+    
+    vtkSmartPointer<vtkFloatArray> outputNormals = 
+        vtkSmartPointer<vtkFloatArray>::New();
+    // set vertex
+    int numVertex = meshMPU->vertex_N;
+    cout << "There are " << numVertex << " vertices." << endl;
+    outputPoints->SetNumberOfPoints(numVertex);
+    float (*vertexMPU)[3] = meshMPU->vertex;
+    
+    for (int i = 0; i < numVertex; i++)
+      {
+      outputPoints->SetPoint(i, vertexMPU[i]);
+      }
+      
+    outputMesh->SetPoints(outputPoints);
+    
+    // set triangle
+    int numTriangle = meshMPU->face_N;
+    cout << "There are " << numTriangle << " triangles." << endl;
+    int **face = meshMPU->face;
+    int *poly_N = meshMPU->poly_N; // store num of vertex for ith face, shouldn't be a constant like 3?
+    
+    for(int i = 0; i < numTriangle; i++)
+      {
+      //pts->SetComponent(0,0,face[i][0]);
+      //pts->SetComponent(1,0,face[i][1]);
+      //pts->SetComponent(2,0,face[i][2]);
+      pts[0]=face[i][0];  pts[1]=face[i][1];  pts[2]=face[i][2];
+      outputTriangles->InsertNextCell(3,pts);
+      }
+      
+    outputMesh->SetPolys(outputTriangles);
+    // set normal
+    meshMPU->computeFaceNormal();
+    float (*normalMPU)[3] = meshMPU->normal_f;
+    outputNormals->SetNumberOfComponents(3);
+    outputNormals->SetNumberOfTuples(numTriangle);
+    
+    for (int i=0; i<numTriangle; i++)
+      {
+      outputNormals->SetComponent(i,0,normalMPU[i][0]);
+      outputNormals->SetComponent(i,1,normalMPU[i][1]);
+      outputNormals->SetComponent(i,2,normalMPU[i][2]);
+      }
+      
+    outputMesh->GetCellData()->SetNormals(outputNormals);
+      
+    output->ShallowCopy(outputMesh);
     }
-    
-  outputMesh->SetPoints(outputPoints);
-  
-  // set triangle
-  int numTriangle = meshMPU->face_N;
-  cout << "There are " << numTriangle << " triangles." << endl;
-  int **face = meshMPU->face;
-  int *poly_N = meshMPU->poly_N; // store num of vertex for ith face, shouldn't be a constant like 3?
-  
-  for(int i = 0; i < numTriangle; i++)
+  else // Marching Cubes
     {
-    //pts->SetComponent(0,0,face[i][0]);
-    //pts->SetComponent(1,0,face[i][1]);
-    //pts->SetComponent(2,0,face[i][2]);
-    pts[0]=face[i][0];  pts[1]=face[i][1];  pts[2]=face[i][2];
-    outputTriangles->InsertNextCell(3,pts);
-    }
-    
-  outputMesh->SetPolys(outputTriangles);
-  // set normal
-  meshMPU->computeFaceNormal();
-  float (*normalMPU)[3] = meshMPU->normal_f;
-  outputNormals->SetNumberOfComponents(3);
-  outputNormals->SetNumberOfTuples(numTriangle);
-  
-  for (int i=0; i<numTriangle; i++)
-    {
-    outputNormals->SetComponent(i,0,normalMPU[i][0]);
-    outputNormals->SetComponent(i,1,normalMPU[i][1]);
-    outputNormals->SetComponent(i,2,normalMPU[i][2]);
-    }
-    
-  outputMesh->GetCellData()->SetNormals(outputNormals);
-    
-  output->ShallowCopy(outputMesh);
+    ComputeImplicitImage( );
 
-  delete _func;
+    vtkSmartPointer< vtkMarchingCubes > mc =
+      vtkSmartPointer< vtkMarchingCubes >::New();
+    mc->SetInput( this->ImplicitImage );
+    mc->SetNumberOfContours(1);
+    mc->ComputeScalarsOn();
+    mc->ComputeGradientsOn();
+    mc->ComputeNormalsOn();
+    mc->SetValue(0, 0.);
+    mc->Update();
+
+    output->ShallowCopy( mc->GetOutput() );
+    }
+
   delete _ps;
   
   return 1;
 }
 
+void vtkMPU::ComputeImplicitImage( )
+{
+  vtkSmartPointer< vtkMPUImplicitFunction > implicit =
+    vtkSmartPointer< vtkMPUImplicitFunction >::New();
+  implicit->SetMPUFunction( this->_func );
+
+  int dimension = static_cast< int >( 1. / this->Grid );
+  vtkSmartPointer< vtkSampleFunction > sample =
+    vtkSmartPointer< vtkSampleFunction >::New();
+  sample->SetImplicitFunction( implicit );
+  sample->SetOutputScalarTypeToFloat();
+  sample->SetSampleDimensions( dimension, dimension, dimension );
+  sample->SetModelBounds( this->min[0], this->max[0], this->min[1], this->max[1], this->min[2], this->max[2] );
+  sample->Update();
+
+  this->ImplicitImage->ShallowCopy( sample->GetOutput() );
+}
+
+vtkImageData* vtkMPU::GetImplicitImage()
+{
+  if( this->Bloomenthal )
+    {
+    ComputeImplicitImage( );
+    }
+
+  return this->ImplicitImage;
+}
 
 //----------------------------------------------------------------------------
 void vtkMPU::PrintSelf(ostream& os, vtkIndent indent)

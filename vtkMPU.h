@@ -3,6 +3,10 @@
 
 #include "vtkPolyDataAlgorithm.h"
 
+class vtkImageData;
+class ImplicitPOU;
+
+
 /** 
 \class vtkMPU
 \brief vtk wrapper class for the MPU reconstruction method (see reference below).
@@ -66,13 +70,25 @@ public:
   vtkSetMacro( Sharp, bool );
   vtkGetMacro( Sharp, bool );
   vtkBooleanMacro( Sharp, bool );
-  
+
+  vtkSetMacro( Bloomenthal, bool );
+  vtkGetMacro( Bloomenthal, bool );
+  vtkBooleanMacro( Bloomenthal, bool );
+
+  vtkImageData* GetImplicitImage();
   
 protected:
   vtkMPU();
+  ~vtkMPU();
   
   int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
-  
+  void ComputeImplicitImage();
+
+  ImplicitPOU* _func;
+  vtkImageData* ImplicitImage;
+
+  float min[3];
+  float max[3];
   float Support;
   float Box;
   float Lambda;
@@ -84,6 +100,8 @@ protected:
   float Error;
   float Iso;
   bool Sharp;
+  bool Bloomenthal;
+
 
 private:
   vtkMPU(const vtkMPU&);  // Not implemented.
