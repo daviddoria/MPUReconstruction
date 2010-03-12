@@ -27,6 +27,7 @@ ADD_PARAVIEW_PLUGIN(MPUReconstructionPlugin "1.0"
 SERVER_MANAGER_SOURCES vtkMPU.cxx vtkMPUImplicitFunction.cxx
 SERVER_SOURCES vtkMPU.cxx ImplicitFunction.cpp Polygonizer.cpp PolygonalMesh.cpp OctTreeP.cpp ImplicitOctTree.cpp SVD.cpp Bloomenthal.cpp QuadricOEdge.cpp Quadric.cpp QuadricO.cpp QuadricOCorner.cpp AxisKdTree.cpp
 )
+TARGET_LINK_LIBRARIES(MPUReconstructionPlugin ITKNumerics vnl)
 
 endif(BUILD_PARAVIEW_PLUGIN)
 
@@ -63,5 +64,3 @@ vtkCommon
 vtkVolumeRendering
 ITKNumerics
 )  
-
-
