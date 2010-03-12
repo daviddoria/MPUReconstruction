@@ -94,7 +94,7 @@ void Quadric::computePolySVD2(PointSet* ps, float R, ImplicitOctCell *cell,
   for(int i=0; i<listN; i++){
     int in = index_list[i];
     float* p = point[in];
-    float* n = normal[in];
+//    float* n = normal[in];
     
     float vx = p[0] - c[0];
     float vy = p[1] - c[1];
@@ -296,7 +296,7 @@ void Quadric::computePolySVD(PointSet* ps, float R, ImplicitOctCell *cell,
   for(int i=0; i<listN; i++){
     int in = index_list[i];
     float* p = point[in];
-    float* n = normal[in];
+//    float* n = normal[in];
     
     float vx = p[0] - c[0];
     float vy = p[1] - c[1];
@@ -445,7 +445,7 @@ float Quadric::computeMaxError(PointSet* ps, float R, ImplicitOctCell *cell,
   float c[3];
   cell->cellCenter(c);
   float (*point)[3] = ps->_point;
-  bool *bound = ps->_bound;
+//  bool *bound = ps->_bound;
   
   float R2 = R*R;
   for(int i=0; i<listN; i++){

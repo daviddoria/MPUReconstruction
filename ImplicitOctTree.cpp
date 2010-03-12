@@ -314,7 +314,7 @@ void ImplicitOctCell::computeLA(){
   PointSet* _ps = _tree->_ps;
   float (*point)[3] = _ps->_point;
   float (*normal)[3] = _ps->_normal;
-  bool *bound = _ps->_bound;
+//  bool *bound = _ps->_bound;
   
   //if(_level < 3){
     //return;

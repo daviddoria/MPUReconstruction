@@ -20,7 +20,7 @@ QuadricOCorner::QuadricOCorner(PointSet* ps, float R_error, float R_laf, Implici
   for(int i=0; i<listN; i++)
     id[i] = -1;
   
-  bool flag = true;
+//  bool flag = true;
   
   float *n1 = normal[index1];
   float *n2 = normal[index2];
@@ -246,7 +246,7 @@ QuadricOCorner::QuadricOCorner(PointSet* ps, float R_error, float R_laf, Implici
   float error = 0;
   
   float R2 = R_error*R_error;
-  bool* bound = ps->_bound;
+//  bool* bound = ps->_bound;
   for(int i=0; i<listN; i++){
     int j = index_list[i];
     //if(bound[j])

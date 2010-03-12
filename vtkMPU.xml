@@ -1,7 +1,7 @@
 <ServerManagerConfiguration>
   <ProxyGroup name="filters">
     <!-- ================================================================== -->
-    <SourceProxy name="MPUReconstruction" class="vtkMPUReconstruction" label="MPUReconstruction">
+    <SourceProxy name="MPUReconstruction" class="vtkMPU" label="MPUReconstruction">
       <Documentation
          long_help="Estimate a surface from a set of oriented points."
          short_help="Estimate a surface from a set of oriented points.">
@@ -22,7 +22,7 @@
           Set the input oriented point set.
         </Documentation>
       </InputProperty>
-
+  
               <DoubleVectorProperty
             name="Support"
             command="SetSupport"
@@ -44,7 +44,7 @@
             default_values="0.1">
          </DoubleVectorProperty>
   
-           <IntVectorProperty
+          <IntVectorProperty
             name="Nmin"
             command="SetNmin"
             number_of_elements="1"
@@ -65,7 +65,7 @@
             default_values="0.7">
          </DoubleVectorProperty>
   
-                             <DoubleVectorProperty
+    <DoubleVectorProperty
             name="Grid"
             command="SetGrid"
             number_of_elements="1"
@@ -93,14 +93,23 @@
             default_values="0">
          </IntVectorProperty>
          
-                                      <IntVectorProperty
+    
+  <IntVectorProperty
             name="Sharp"
             command="SetSharp"
             number_of_elements="1"
             default_values="1">
-                           <BooleanDomain name="bool"/>             
+    <BooleanDomain name="bool"/>             
          </IntVectorProperty>
          
+         <IntVectorProperty
+            name="Bloomenthal"
+            command="SetBloomenthal"
+            number_of_elements="1"
+            default_values="0">
+    <BooleanDomain name="bool"/>             
+         </IntVectorProperty>
+
 
     </SourceProxy>
     <!-- End SurfaceReconstruction -->

@@ -794,7 +794,7 @@ void OctTreeP::bisection(float p[], float p1[], float p2[], float f1, float f2)
 		p3[1] = p1[1] + dt[1]*f1/(f1-f2);
 		p3[2] = p1[2] + dt[2]*f1/(f1-f2);
 
-		bool flag;
+//		bool flag;
 		f3 = func->value(p3[0], p3[1], p3[2]);
 
 		if(fabs(f3) < 0.000001){
@@ -1372,7 +1372,7 @@ void OctTreeP::edgeProcQ(Cell *c1, Cell *c2, Cell *c3, Cell *c4, int edge)
 		else
 			nor[0] = nor[1] = nor[2] = 0;
 
-		float v[3];
+//		float v[3];
 		float center[3];
 		//CELL_P(center, c1);
 		//PolygonalMesh::VEC(v, center, p);

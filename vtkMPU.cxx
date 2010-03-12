@@ -176,7 +176,7 @@ int vtkMPU::RequestData(vtkInformation *vtkNotUsed(request),
     int numTriangle = meshMPU->face_N;
     cout << "There are " << numTriangle << " triangles." << endl;
     int **face = meshMPU->face;
-    int *poly_N = meshMPU->poly_N; // store num of vertex for ith face, shouldn't be a constant like 3?
+//    int *poly_N = meshMPU->poly_N; // store num of vertex for ith face, shouldn't be a constant like 3?
     
     for(int i = 0; i < numTriangle; i++)
       {

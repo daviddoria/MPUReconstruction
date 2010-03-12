@@ -98,7 +98,7 @@ QuadricOEdge::QuadricOEdge(PointSet* ps, float R_error, float R_laf, ImplicitOct
   float error = 0;
   
   float R2 = R_error*R_error;
-  bool* bound = ps->_bound;
+//  bool* bound = ps->_bound;
   for(i=0; i<listN; i++){
     j = index_list[i];
     //if(bound[j])

@@ -208,7 +208,7 @@ char* Bloomenthal::polygonize(PolygonalMesh* mesh, double size, float bounds[6],
     }
 
 	//free
-	for(int i=0; i<HASHSIZE; i++){
+	for(unsigned int i=0; i<HASHSIZE; i++){
 		while(p.centers[i] != NULL){
 			CENTERLIST* current = p.centers[i];
 			p.centers[i] = current->next;
@@ -217,7 +217,7 @@ char* Bloomenthal::polygonize(PolygonalMesh* mesh, double size, float bounds[6],
 	}
 	free((char*)p.centers);
 
-	for(int i=0; i<HASHSIZE; i++){
+	for(unsigned int i=0; i<HASHSIZE; i++){
 		while(p.corners[i] != NULL){
 			CORNERLIST* current = p.corners[i];
 			p.corners[i] = current->next;
@@ -226,7 +226,7 @@ char* Bloomenthal::polygonize(PolygonalMesh* mesh, double size, float bounds[6],
 	}
 	free((char*)p.corners);
 
-	for(int i=0; i<2*HASHSIZE; i++){
+	for(unsigned int i=0; i<2*HASHSIZE; i++){
 		while(p.edges[i] != NULL){
 			EDGELIST* current = p.edges[i];
 			p.edges[i] = current->next;
@@ -308,8 +308,8 @@ void Bloomenthal::testface(int i, int j, int k, CUBE *old,
 	CUBE new1;
     CUBES *oldcubes = p->cubes;
     //CORNER *setcorner();
-    static int facebit[6] = {2, 2, 1, 1, 0, 0};
-    int n, pos = old->corners[c1]->value > 0.0 ? 1 : 0, bit = facebit[face];
+//    static int facebit[6] = {2, 2, 1, 1, 0, 0};
+    int n, pos = old->corners[c1]->value > 0.0 ? 1 : 0;//, bit = facebit[face];
 
     /* test if no surface crossing, cube out of bounds, or already visited: */
     if ((old->corners[c2]->value > 0) == pos &&
@@ -403,11 +403,21 @@ int Bloomenthal::dotet(CUBE *cube, int c1, int c2, int c3, int c4, PROCESS *p)
     CORNER *b = cube->corners[c2];
     CORNER *c = cube->corners[c3];
     CORNER *d = cube->corners[c4];
-    int index = 0, apos, bpos, cpos, dpos, e1, e2, e3, e4, e5, e6;
-    if (apos = (a->value > 0.0)) index += 8;
-    if (bpos = (b->value > 0.0)) index += 4;
-    if (cpos = (c->value > 0.0)) index += 2;
-    if (dpos = (d->value > 0.0)) index += 1;
+    int index = 0, e1, e2, e3, e4, e5, e6;
+    bool apos, bpos, cpos, dpos;
+    
+    apos = a->value > 0.0;
+    if (apos) index += 8;
+    
+    bpos = (b->value > 0.0);
+    if (bpos) index += 4;
+    
+    cpos = (c->value > 0.0);
+    if (cpos) index += 2;
+    
+    dpos = (d->value > 0.0);
+    if (dpos) index += 1;
+
     /* index is now 4-bit number representing one of the 16 possible cases */
     if (apos != bpos) e1 = vertid(a, b, p);
     if (apos != cpos) e2 = vertid(a, c, p);

@@ -17,7 +17,17 @@ ENDIF(ITK_FOUND)
 SET(BUILD_PARAVIEW_PLUGIN OFF CACHE BOOL "Build Paraview plugin?")
 
 if(BUILD_PARAVIEW_PLUGIN)
-SUBDIRS(plugin)
+FIND_PACKAGE(ParaView REQUIRED)
+INCLUDE(${PARAVIEW_USE_FILE})
+
+INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ../)
+
+ADD_PARAVIEW_PLUGIN(MPUReconstructionPlugin "1.0"
+  SERVER_MANAGER_XML vtkMPU.xml
+SERVER_MANAGER_SOURCES vtkMPU.cxx vtkMPUImplicitFunction.cxx
+SERVER_SOURCES vtkMPU.cxx ImplicitFunction.cpp Polygonizer.cpp PolygonalMesh.cpp OctTreeP.cpp ImplicitOctTree.cpp SVD.cpp Bloomenthal.cpp QuadricOEdge.cpp Quadric.cpp QuadricO.cpp QuadricOCorner.cpp AxisKdTree.cpp
+)
+
 endif(BUILD_PARAVIEW_PLUGIN)
 
 INCLUDE_DIRECTORIES(  

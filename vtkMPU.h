@@ -4,15 +4,15 @@
 #include "vtkPolyDataAlgorithm.h"
 
 class vtkImageData;
-class ImplicitPOU;
 
+//BTX
+class ImplicitPOU;
+//ETX
 
 /** 
 \class vtkMPU
 \brief vtk wrapper class for the MPU reconstruction method (see reference below).
-Default values should work fine! But if you are willing to tweal the parameters, have a look first at the original papers.
-
-
+Default values should work fine! But if you are willing to tweak the parameters, have a look first at the original papers.
 
 \ref Bibtex:
 @article{MPU,

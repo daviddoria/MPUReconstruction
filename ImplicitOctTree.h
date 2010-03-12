@@ -166,7 +166,7 @@ public:
   ImplicitOctTree(PointSet* ps, float min[], float max[]){
     _ps = ps;
     
-    int N = ps->_pointN;
+//    int N = ps->_pointN;
     float size = max[0] - min[0];
     if(size < max[1] - min[1])
       size = max[1] - min[1];
